@@ -25,8 +25,8 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     // Custom JPQL — search by keyword
     @Query("SELECT p FROM ProductEntity p " +
             "WHERE p.active = true " +
-            "AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "AND (p.name LIKE %:keyword% " +
+            "OR p.description LIKE %:keyword%)")
     Page<ProductEntity> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     // Custom JPQL — price range filter
