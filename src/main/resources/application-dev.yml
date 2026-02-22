@@ -1,0 +1,10 @@
+# Dev profile — more relaxed settings
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update    # auto update schema in dev
+    show-sql: true
+
+logging:
+  level:
+    com.shopnest: DEBUG

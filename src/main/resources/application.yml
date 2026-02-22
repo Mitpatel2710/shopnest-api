@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: shopnest-api
+
+  # ── Database ──────────────────────────────────────
+  datasource:
+    url: jdbc:mysql://localhost:3306/shopnest?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: shopnest_user
+    password: ShopNest@2024
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ── JPA / Hibernate ───────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate        # validate schema against entities — safe for prod
+    show-sql: true              # log all SQL to console
+    properties:
+      hibernate:
+        format_sql: true        # pretty print SQL
+        dialect: org.hibernate.dialect.MySQLDialect
+        default_batch_fetch_size: 20
+
+  # ── Flyway ────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# ── Server ────────────────────────────────────────
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+# ── Logging ───────────────────────────────────────
+logging:
+  level:
+    com.shopnest: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
