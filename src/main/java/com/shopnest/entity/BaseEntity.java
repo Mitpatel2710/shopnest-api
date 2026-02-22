@@ -9,6 +9,32 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * Base entity — shared fields for all JPA entities.
+ *
+ * HIBERNATE LIFECYCLE STATES:
+ *
+ * TRANSIENT   → new Entity() — not tracked, no ID
+ *               SQL: none
+ *
+ * PERSISTENT  → after persist() or findById() inside @Transactional
+ *               Hibernate tracks ALL field changes (dirty checking)
+ *               SQL: UPDATE auto-generated at flush
+ *
+ * DETACHED    → after transaction closes
+ *               Changes NOT tracked — must call save() to reattach
+ *               Accessing LAZY collections → LazyInitializationException
+ *               SQL: none until reattached
+ *
+ * REMOVED     → after remove() called
+ *               SQL: DELETE on commit
+ *
+ * FIRST-LEVEL CACHE:
+ *   EntityManager caches entities per transaction.
+ *   findById(1L) called twice → only ONE SQL query.
+ *   Second call returns cached instance.
+ */
+
 @Getter
 @Setter
 @MappedSuperclass
