@@ -12,7 +12,7 @@ public class EmbeddableDemo {
 
     // Runs on startup in dev profile only
     // Remove or comment out after verifying
-    @Bean
+//    @Bean
     @Profile("dev")
     public CommandLineRunner demonstrateEmbeddable() {
         return args -> {
