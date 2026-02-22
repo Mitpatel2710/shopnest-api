@@ -2,13 +2,29 @@ package com.shopnest.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-// @Embeddable — stored as columns in the parent table, no own table
+/**
+ * @Embeddable — Value Object pattern
+ *
+ * KEY CONCEPTS:
+ * 1. No @Id — Address has no identity of its own
+ * 2. No @Entity — no table created for Address
+ * 3. @Embedded in UserEntity — columns added to users table
+ * 4. Multiple embeddings — DeliveryAddress reuses same concept in orders
+ * 5. Snapshot pattern — DeliveryAddress in Order is frozen at purchase time
+ *
+ * COLUMNS IN users TABLE:
+ *   street VARCHAR(255)
+ *   city   VARCHAR(100)
+ *   state  VARCHAR(100)
+ *   pincode VARCHAR(10)
+ *
+ * WHY NOT A SEPARATE TABLE?
+ *   Address has no meaning without a User.
+ *   No other entity references an Address directly.
+ *   No need for a JOIN — simpler and faster.
+ */
 @Embeddable
 @Getter
 @Setter
