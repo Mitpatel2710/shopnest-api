@@ -3,6 +3,9 @@ package com.shopnest.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(
         name = "users",
@@ -33,7 +36,7 @@ public class UserEntity extends BaseEntity {
     @Column(name = "phone", length = 15)
     private String phone;
 
-    @Enumerated(EnumType.STRING)            // store "CUSTOMER" not 0
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
 
@@ -41,9 +44,30 @@ public class UserEntity extends BaseEntity {
     private boolean active;
 
     // ── Embedded Address ──────────────────────────────
-    // stored as street, city, state, pincode columns in users table
     @Embedded
     private Address address;
+
+    // ── Relationships ─────────────────────────────────
+
+    // OneToOne — user has one cart
+    @OneToOne(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
+    private CartEntity cart;
+
+    // OneToMany — user has many orders
+    @OneToMany(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<OrderEntity> orders = new ArrayList<>();
+
+    // OneToMany — user has many reviews
+    @OneToMany(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ReviewEntity> reviews = new ArrayList<>();
 
     // ── Business helpers ──────────────────────────────
     public String getFullName() {
