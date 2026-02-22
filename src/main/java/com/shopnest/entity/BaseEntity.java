@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@MappedSuperclass                           // not an entity itself — just shared fields
-@EntityListeners(AuditingEntityListener.class) // enables @CreatedDate, @LastModifiedDate
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
 
     @Id
