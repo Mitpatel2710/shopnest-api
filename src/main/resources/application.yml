@@ -12,11 +12,11 @@ spring:
   # ── JPA / Hibernate ───────────────────────────────
   jpa:
     hibernate:
-      ddl-auto: validate        # validate schema against entities — safe for prod
-    show-sql: true              # log all SQL to console
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
-        format_sql: true        # pretty print SQL
+        format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
         default_batch_fetch_size: 20
 
