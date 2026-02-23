@@ -7,6 +7,7 @@ import com.shopnest.entity.CategoryEntity;
 import com.shopnest.entity.ProductEntity;
 import com.shopnest.entity.UserEntity;
 import com.shopnest.exception.ResourceNotFoundException;
+import com.shopnest.mapper.ProductMapper;
 import com.shopnest.repository.CategoryRepository;
 import com.shopnest.repository.ProductRepository;
 import com.shopnest.repository.UserRepository;
@@ -21,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -31,20 +31,20 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final ProductMapper productMapper;          // ← added
 
     // ── GET ALL — paginated ───────────────────────────
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> getAllProducts(int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
         Page<ProductEntity> products = productRepository.findAll(pageable);
-        return PageResponse.from(products.map(this::toResponse));
+        return PageResponse.from(products.map(productMapper::toResponse));
     }
 
     // ── GET BY ID ─────────────────────────────────────
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
-        ProductEntity product = findProductById(id);
-        return toResponse(product);
+        return productMapper.toResponse(findProductById(id));
     }
 
     // ── GET BY CATEGORY ───────────────────────────────
@@ -56,9 +56,10 @@ public class ProductService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<ProductEntity> products = productRepository
                 .findByCategoryIdAndActiveTrue(categoryId, pageable);
-        return PageResponse.from(products.map(this::toResponse));
+        return PageResponse.from(products.map(productMapper::toResponse));
     }
 
+    // ── GET BY CATEGORY SLUG ──────────────────────────
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> getProductsByCategorySlug(
             String slug, int page, int size) {
@@ -68,9 +69,8 @@ public class ProductService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<ProductEntity> products = productRepository
                 .findByCategoryIdAndActiveTrue(category.getId(), pageable);
-        return PageResponse.from(products.map(this::toResponse));
+        return PageResponse.from(products.map(productMapper::toResponse));
     }
-
 
     // ── SEARCH ────────────────────────────────────────
     @Transactional(readOnly = true)
@@ -79,7 +79,7 @@ public class ProductService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<ProductEntity> products = productRepository
                 .searchByKeyword(keyword, pageable);
-        return PageResponse.from(products.map(this::toResponse));
+        return PageResponse.from(products.map(productMapper::toResponse));
     }
 
     // ── PRICE RANGE ───────────────────────────────────
@@ -89,7 +89,7 @@ public class ProductService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("price").ascending());
         Page<ProductEntity> products = productRepository
                 .findByPriceRange(minPrice, maxPrice, pageable);
-        return PageResponse.from(products.map(this::toResponse));
+        return PageResponse.from(products.map(productMapper::toResponse));
     }
 
     // ── CREATE ────────────────────────────────────────
@@ -106,22 +106,15 @@ public class ProductService {
                             "User", request.getSellerId()));
         }
 
-        ProductEntity product = ProductEntity.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .price(request.getPrice())
-                .stockQty(request.getStockQty())
-                .imageUrl(request.getImageUrl())
-                .type(request.getType())
-                .brand(request.getBrand())
-                .active(true)
-                .category(category)
-                .seller(seller)
-                .build();
+        // MapStruct converts request → entity
+        ProductEntity product = productMapper.toEntity(request);
+        product.setActive(true);
+        product.setCategory(category);
+        product.setSeller(seller);
 
         ProductEntity saved = productRepository.save(product);
         log.debug("Created product: {} with id: {}", saved.getName(), saved.getId());
-        return toResponse(saved);
+        return productMapper.toResponse(saved);
     }
 
     // ── UPDATE ────────────────────────────────────────
@@ -129,14 +122,8 @@ public class ProductService {
     public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
         ProductEntity product = findProductById(id);
 
-        if (request.getName()        != null) product.setName(request.getName());
-        if (request.getDescription() != null) product.setDescription(request.getDescription());
-        if (request.getPrice()       != null) product.setPrice(request.getPrice());
-        if (request.getStockQty()    != null) product.setStockQty(request.getStockQty());
-        if (request.getImageUrl()    != null) product.setImageUrl(request.getImageUrl());
-        if (request.getType()        != null) product.setType(request.getType());
-        if (request.getBrand()       != null) product.setBrand(request.getBrand());
-        if (request.getActive()      != null) product.setActive(request.getActive());
+        // MapStruct updates only non-null fields
+        productMapper.updateEntity(product, request);
 
         if (request.getCategoryId() != null) {
             CategoryEntity category = categoryRepository
@@ -148,14 +135,14 @@ public class ProductService {
 
         // No explicit save() — dirty checking handles UPDATE
         log.debug("Updated product: {}", id);
-        return toResponse(product);
+        return productMapper.toResponse(product);
     }
 
     // ── DELETE (soft delete) ──────────────────────────
     @Transactional
     public void deleteProduct(Long id) {
         ProductEntity product = findProductById(id);
-        product.setActive(false);   // soft delete — never hard delete products
+        product.setActive(false);
         log.debug("Soft deleted product: {}", id);
     }
 
@@ -167,32 +154,12 @@ public class ProductService {
         ProductEntity product = findProductById(id);
         product.addStock(quantity);
         log.debug("Restocked product: {} by {}", id, quantity);
-        return toResponse(product);
+        return productMapper.toResponse(product);
     }
 
     // ── PRIVATE HELPERS ───────────────────────────────
     private ProductEntity findProductById(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
-    }
-
-    private ProductResponse toResponse(ProductEntity p) {
-        return ProductResponse.builder()
-                .id(p.getId())
-                .name(p.getName())
-                .description(p.getDescription())
-                .price(p.getPrice())
-                .stockQty(p.getStockQty())
-                .imageUrl(p.getImageUrl())
-                .active(p.isActive())
-                .type(p.getType())
-                .brand(p.getBrand())
-                .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
-                .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
-                .sellerId(p.getSeller() != null ? p.getSeller().getId() : null)
-                .sellerName(p.getSeller() != null ? p.getSeller().getFullName() : null)
-                .createdAt(p.getCreatedAt())
-                .updatedAt(p.getUpdatedAt())
-                .build();
     }
 }

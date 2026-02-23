@@ -22,7 +22,7 @@ public class ProductResponse {
     private Long categoryId;
     private String categoryName;
     private Long sellerId;
-    private String sellerName;
+    private String sellerName;          // mapped from seller.firstName
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
