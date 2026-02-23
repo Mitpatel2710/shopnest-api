@@ -1,9 +1,9 @@
 package com.shopnest.dto.request;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
 
@@ -21,14 +21,22 @@ public class CreateProductRequest {
 
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
-    @Digits(integer = 8, fraction = 2, message = "Invalid price format")
+    @Digits(integer = 8, fraction = 2, message = "Price must have at most 2 decimal places")
     private BigDecimal price;
 
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private int stockQty;
 
+    @Pattern(
+            regexp = "^(https?://).+",
+            message = "Image URL must start with http:// or https://"
+    )
     private String imageUrl;
+
+    @Size(max = 50, message = "Type cannot exceed 50 characters")
     private String type;
+
+    @Size(max = 100, message = "Brand cannot exceed 100 characters")
     private String brand;
 
     @NotNull(message = "Category is required")
