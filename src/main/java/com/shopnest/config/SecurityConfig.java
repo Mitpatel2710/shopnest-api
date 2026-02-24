@@ -1,6 +1,7 @@
 package com.shopnest.config;
 
 import com.shopnest.security.CustomUserDetailsService;
+import com.shopnest.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,21 +22,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity           // enables @PreAuthorize on methods
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final JwtAuthenticationFilter jwtAuthFilter;  // ← added
 
     // ── Password encoder ──────────────────────────────
-    // BCrypt — industry standard, salted, slow by design
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     // ── Authentication provider ───────────────────────
-    // Wires UserDetailsService + PasswordEncoder together
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -45,7 +45,6 @@ public class SecurityConfig {
     }
 
     // ── Authentication manager ────────────────────────
-    // Used in AuthService to authenticate login requests
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
@@ -53,32 +52,24 @@ public class SecurityConfig {
     }
 
     // ── Security filter chain ─────────────────────────
-    // Defines which endpoints are public and which require auth
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
         http
-                // Disable CSRF — not needed for stateless JWT APIs
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // Stateless — no sessions, JWT handles auth
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-
-                        // ── Public endpoints ──────────────────
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/search").permitAll()
-
-                        // ── All other requests require auth ───
                         .anyRequest().authenticated()
                 )
+                .authenticationProvider(authenticationProvider())
 
-                // Wire our custom authentication provider
-                .authenticationProvider(authenticationProvider());
+                // JWT filter runs before default auth filter ← added
+                .addFilterBefore(jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
