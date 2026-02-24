@@ -25,7 +25,7 @@ public class HibernateLifecycleDemo {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Bean
+//    @Bean
     @Profile("dev")
     public CommandLineRunner demonstrateLifecycle() {
         return args -> {
