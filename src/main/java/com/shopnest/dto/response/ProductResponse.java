@@ -1,14 +1,19 @@
 package com.shopnest.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.io.Serializable;
 
 @Getter
 @Builder
-public class ProductResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductResponse implements Serializable {
 
     private Long id;
     private String name;

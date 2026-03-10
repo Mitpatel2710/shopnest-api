@@ -1,24 +1,27 @@
 package com.shopnest.util;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
 @Builder
-public class PageResponse<T> {
+@NoArgsConstructor    // ← add this
+@AllArgsConstructor   // ← add this
+public class PageResponse<T> implements Serializable {
+    private List<T> content;
+    private int pageNumber;
+    private int pageSize;
+    private long totalElements;
+    private int totalPages;
+    private boolean first;
+    private boolean last;
 
-    private final List<T> content;
-    private final int pageNumber;
-    private final int pageSize;
-    private final long totalElements;
-    private final int totalPages;
-    private final boolean first;
-    private final boolean last;
-
-    // Convert Spring Page<T> to PageResponse<T>
     public static <T> PageResponse<T> from(Page<T> page) {
         return PageResponse.<T>builder()
                 .content(page.getContent())
