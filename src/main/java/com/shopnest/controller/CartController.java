@@ -7,6 +7,7 @@ import com.shopnest.util.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,16 +17,18 @@ public class CartController {
 
     private final CartService cartService;
 
-    // GET /api/cart/{userId}
+    // ADMIN, CUSTOMER
     @GetMapping("/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<CartResponse>> getCart(
             @PathVariable Long userId) {
         return ResponseEntity.ok(
                 ApiResponse.success(cartService.getCart(userId)));
     }
 
-    // POST /api/cart/add
+    // CUSTOMER only
     @PostMapping("/add")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<ApiResponse<CartResponse>> addToCart(
             @Valid @RequestBody AddToCartRequest request) {
         return ResponseEntity.ok(
@@ -33,8 +36,9 @@ public class CartController {
                         cartService.addToCart(request)));
     }
 
-    // PUT /api/cart/{userId}/items/{productId}?quantity=2
+    // CUSTOMER only
     @PutMapping("/{userId}/items/{productId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<ApiResponse<CartResponse>> updateQuantity(
             @PathVariable Long userId,
             @PathVariable Long productId,
@@ -44,8 +48,9 @@ public class CartController {
                         cartService.updateQuantity(userId, productId, quantity)));
     }
 
-    // DELETE /api/cart/{userId}/items/{productId}
+    // CUSTOMER only
     @DeleteMapping("/{userId}/items/{productId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<ApiResponse<CartResponse>> removeFromCart(
             @PathVariable Long userId,
             @PathVariable Long productId) {
@@ -54,8 +59,9 @@ public class CartController {
                         cartService.removeFromCart(userId, productId)));
     }
 
-    // DELETE /api/cart/{userId}/clear
+    // CUSTOMER only
     @DeleteMapping("/{userId}/clear")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> clearCart(
             @PathVariable Long userId) {
         cartService.clearCart(userId);

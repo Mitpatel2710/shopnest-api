@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,8 +19,9 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    // POST /api/orders
+    // CUSTOMER, ADMIN
     @PostMapping
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(
             @Valid @RequestBody CreateOrderRequest request) {
         return ResponseEntity
@@ -28,16 +30,18 @@ public class OrderController {
                         orderService.placeOrder(request)));
     }
 
-    // GET /api/orders/{id}
+    // ADMIN, CUSTOMER (own order)
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
             @PathVariable Long id) {
         return ResponseEntity.ok(
                 ApiResponse.success(orderService.getOrderById(id)));
     }
 
-    // GET /api/orders/user/{userId}
+    // ADMIN, CUSTOMER (own orders)
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<PageResponse<OrderResponse>>> getOrdersByUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0")  int page,
@@ -47,8 +51,9 @@ public class OrderController {
                         orderService.getOrdersByUser(userId, page, size)));
     }
 
-    // GET /api/orders?page=0&size=10
+    // ADMIN only
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<PageResponse<OrderResponse>>> getAllOrders(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -56,8 +61,9 @@ public class OrderController {
                 ApiResponse.success(orderService.getAllOrders(page, size)));
     }
 
-    // PATCH /api/orders/{id}/confirm
+    // ADMIN only
     @PatchMapping("/{id}/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<OrderResponse>> confirmOrder(
             @PathVariable Long id) {
         return ResponseEntity.ok(
@@ -65,8 +71,9 @@ public class OrderController {
                         orderService.confirmOrder(id)));
     }
 
-    // PATCH /api/orders/{id}/ship
+    // ADMIN only
     @PatchMapping("/{id}/ship")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<OrderResponse>> shipOrder(
             @PathVariable Long id) {
         return ResponseEntity.ok(
@@ -74,8 +81,9 @@ public class OrderController {
                         orderService.shipOrder(id)));
     }
 
-    // PATCH /api/orders/{id}/deliver
+    // ADMIN only
     @PatchMapping("/{id}/deliver")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<OrderResponse>> deliverOrder(
             @PathVariable Long id) {
         return ResponseEntity.ok(
@@ -83,8 +91,9 @@ public class OrderController {
                         orderService.deliverOrder(id)));
     }
 
-    // PATCH /api/orders/{id}/cancel
+    // ADMIN, CUSTOMER
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
             @PathVariable Long id) {
         return ResponseEntity.ok(

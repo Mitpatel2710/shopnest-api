@@ -27,7 +27,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
-    private final JwtAuthenticationFilter jwtAuthFilter;  // ← added
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
     // ── Password encoder ──────────────────────────────
     @Bean
@@ -60,14 +60,40 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+
+                        // ── Public ────────────────────────────
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/search").permitAll()
+
+                        // ── Product management ────────────────
+                        .requestMatchers(HttpMethod.POST,   "/api/products/**")
+                        .hasAnyRole("ADMIN", "SELLER")
+                        .requestMatchers(HttpMethod.PUT,    "/api/products/**")
+                        .hasAnyRole("ADMIN", "SELLER")
+                        .requestMatchers(HttpMethod.PATCH,  "/api/products/**")
+                        .hasAnyRole("ADMIN", "SELLER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/**")
+                        .hasRole("ADMIN")
+
+                        // ── Order management ──────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/orders")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/user/**")
+                        .hasAnyRole("ADMIN", "CUSTOMER")
+                        .requestMatchers(HttpMethod.POST, "/api/orders")
+                        .hasAnyRole("ADMIN", "CUSTOMER")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/**")
+                        .hasAnyRole("ADMIN", "CUSTOMER")
+
+                        // ── Cart ──────────────────────────────
+                        .requestMatchers("/api/cart/**")
+                        .hasAnyRole("ADMIN", "CUSTOMER")
+
+                        // ── All other requests require auth ───
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-
-                // JWT filter runs before default auth filter ← added
                 .addFilterBefore(jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class);
 
