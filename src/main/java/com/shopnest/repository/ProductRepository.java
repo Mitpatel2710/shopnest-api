@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
@@ -21,6 +22,14 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     List<ProductEntity> findByActiveTrueAndStockQtyGreaterThan(int minStock);
 
     Page<ProductEntity> findByCategoryIdAndActiveTrue(Long categoryId, Pageable pageable);
+
+    // JOIN FETCH category — fixes LazyInitializationException when caching
+    @Query(value = "SELECT p FROM ProductEntity p JOIN FETCH p.category LEFT JOIN FETCH p.seller",
+            countQuery = "SELECT COUNT(p) FROM ProductEntity p")
+    Page<ProductEntity> findAllWithCategory(Pageable pageable);
+
+    @Query("SELECT p FROM ProductEntity p JOIN FETCH p.category LEFT JOIN FETCH p.seller WHERE p.id = :id")
+    Optional<ProductEntity> findByIdWithCategory(@Param("id") Long id);
 
     // Custom JPQL — search by keyword
     @Query("SELECT p FROM ProductEntity p " +
