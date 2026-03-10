@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,17 +25,18 @@ public class ProductController {
 
     private final ProductService productService;
 
-    // GET /api/products?page=0&size=10&sortBy=name
+    // PUBLIC
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getAllProducts(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "name") String sortBy) {
         return ResponseEntity.ok(
-                ApiResponse.success(productService.getAllProducts(page, size, sortBy)));
+                ApiResponse.success(
+                        productService.getAllProducts(page, size, sortBy)));
     }
 
-    // GET /api/products/1
+    // PUBLIC
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(
             @PathVariable Long id) {
@@ -42,19 +44,7 @@ public class ProductController {
                 ApiResponse.success(productService.getProductById(id)));
     }
 
-    // ── IMPORTANT: specific routes BEFORE generic ─────
-// GET /api/products/category/slug/mobiles
-    @GetMapping("/category/slug/{slug}")
-    public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getByCategorySlug(
-            @PathVariable String slug,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        productService.getProductsByCategorySlug(slug, page, size)));
-    }
-
-    // GET /api/products/category/13
+    // PUBLIC
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getByCategory(
             @PathVariable Long categoryId,
@@ -65,17 +55,18 @@ public class ProductController {
                         productService.getProductsByCategory(categoryId, page, size)));
     }
 
-    // GET /api/products/search?keyword=iphone&page=0&size=10
+    // PUBLIC
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> searchProducts(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(
-                ApiResponse.success(productService.searchProducts(keyword, page, size)));
+                ApiResponse.success(
+                        productService.searchProducts(keyword, page, size)));
     }
 
-    // GET /api/products/price-range?min=1000&max=50000
+    // PUBLIC
     @GetMapping("/price-range")
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getByPriceRange(
             @RequestParam BigDecimal min,
@@ -87,18 +78,20 @@ public class ProductController {
                         productService.getProductsByPriceRange(min, max, page, size)));
     }
 
-    // POST /api/products
+    // ADMIN, SELLER only
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
     public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
             @Valid @RequestBody CreateProductRequest request) {
         return ResponseEntity
-                .status(HttpStatus.CREATED)    // ← must be here
+                .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Product created successfully",
                         productService.createProduct(request)));
     }
 
-    // PUT /api/products/1
+    // ADMIN, SELLER only
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody UpdateProductRequest request) {
@@ -107,16 +100,19 @@ public class ProductController {
                         productService.updateProduct(id, request)));
     }
 
-    // DELETE /api/products/1
+    // ADMIN only
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+            @PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok(
                 ApiResponse.success("Product deleted successfully", null));
     }
 
-    // PATCH /api/products/1/restock?quantity=50
+    // ADMIN, SELLER only
     @PatchMapping("/{id}/restock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SELLER')")
     public ResponseEntity<ApiResponse<ProductResponse>> restockProduct(
             @PathVariable Long id,
             @RequestParam @Min(1) int quantity) {
